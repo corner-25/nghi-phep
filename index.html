@@ -961,29 +961,42 @@
             };
 
             const calculateLeaveDays = (fromDate, toDate, leaveType, startDayType, endDayType) => {
-                const from = new Date(fromDate);
-                const to = new Date(toDate);
-                const timeDiff = to.getTime() - from.getTime();
-                const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
-                
-                if (daysDiff === 1) {
-                    if (leaveType === 'morning' || leaveType === 'afternoon') {
-                        return 0.5;
-                    }
+                // Normalize inputs and guard
+                const start = new Date(fromDate);
+                const end = new Date(toDate);
+                if (isNaN(start) || isNaN(end)) return 0;
+                start.setHours(0, 0, 0, 0);
+                end.setHours(0, 0, 0, 0);
+
+                const isSunday = (d) => d.getDay() === 0; // 0 = Sunday
+
+                if (start.getTime() > end.getTime()) return 0;
+
+                // Single-day request
+                if (start.getTime() === end.getTime()) {
+                    if (isSunday(start)) return 0; // Sunday does not count
+                    if (leaveType === 'morning' || leaveType === 'afternoon') return 0.5;
                     return 1;
                 }
-                
-                let totalDays = daysDiff;
-                
-                if (startDayType === 'afternoon') {
-                    totalDays -= 0.5;
+
+                // Multi-day request: count only non-Sunday days (inclusive)
+                let workingDays = 0;
+                for (let d = new Date(start); d.getTime() <= end.getTime(); d.setDate(d.getDate() + 1)) {
+                    if (!isSunday(d)) {
+                        workingDays += 1;
+                    }
                 }
-                
-                if (endDayType === 'morning') {
-                    totalDays -= 0.5;
+
+                // Apply half-day adjustments only if that boundary day is not Sunday
+                if (!isSunday(start) && startDayType === 'afternoon') {
+                    workingDays -= 0.5;
                 }
-                
-                return Math.max(totalDays, 0.5);
+                if (!isSunday(end) && endDayType === 'morning') {
+                    workingDays -= 0.5;
+                }
+
+                // Ensure non-negative
+                return Math.max(0, workingDays);
             };
 
             const handleFormSubmit = async () => {

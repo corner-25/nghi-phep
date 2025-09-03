@@ -197,6 +197,23 @@
             flex: 0 0 auto;
         }
 
+        /* Normalize icon size inside buttons for perfect vertical alignment */
+        .btn .icon {
+            width: 20px;
+            height: 20px;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        /* Button polish */
+        .btn:active { transform: translateY(1px); }
+        .btn:focus-visible { outline: 2px solid rgba(59,130,246,0.6); outline-offset: 2px; }
+        .btn-primary, .btn-success, .btn-secondary, .btn-danger { box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .btn-primary:hover:not(:disabled),
+        .btn-success:hover:not(:disabled),
+        .btn-secondary:hover:not(:disabled),
+        .btn-danger:hover:not(:disabled) { box-shadow: 0 2px 6px rgba(0,0,0,0.10); }
+
         .btn {
             display: inline-flex;
             align-items: center;
@@ -1127,7 +1144,7 @@
                             </p>
                             <button
                                 onClick={() => setShowPasswordPrompt(true)}
-                                className="btn btn-success w-full flex"
+                                className="btn btn-success w-full"
                                 disabled={loading}
                             >
                                 <span className="icon mr-2" aria-hidden="true">🔒</span>

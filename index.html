@@ -779,6 +779,17 @@
             { value: 'morning', label: 'Đến hết buổi sáng' },
             { value: 'afternoon', label: 'Đến hết buổi chiều' }
         ];
+        
+        const locationOptions = [
+            { value: 'trong-tp', label: 'Trong TP. Hồ Chí Minh' },
+            { value: 'ngoai-thanh', label: 'Ngoại thành' }
+        ];
+        
+        const getLocationLabel = (location) => {
+            return locationOptions.find(l => l.value === location)?.label || location;
+        };
+                
+
 
         const LeaveManagementApp = () => {
             const [currentPage, setCurrentPage] = useState('home');
@@ -789,6 +800,8 @@
             const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
             const [firebaseError, setFirebaseError] = useState(null);
             const [realtimeEnabled, setRealtimeEnabled] = useState(false);
+            const [selectedRequest, setSelectedRequest] = useState(null);
+            const [showRequestDetail, setShowRequestDetail] = useState(false);
             
             const [formData, setFormData] = useState({
                 departmentId: '',
@@ -799,7 +812,8 @@
                 startDayType: 'full-day',
                 endDayType: 'full-day',
                 reason: '',
-                customReason: ''
+                customReason: '',
+                location: 'trong-tp' // Thêm dòng này
             });
 
             useEffect(() => {
@@ -859,6 +873,91 @@
                         document.body.removeChild(notification);
                     }
                 }, 4000);
+            };
+            
+            const RequestDetailModal = ({ request, onClose, onApproval, loading }) => {
+                if (!request) return null;
+
+                return (
+                    <div className="modal-overlay">
+                        <div className="modal" style={{ width: '400px', maxWidth: '95vw' }}>
+                            <div className="flex flex-between mb-4">
+                                <h3 className="text-lg font-semibold">Chi tiết đơn nghỉ phép</h3>
+                                <button 
+                                    onClick={onClose}
+                                    className="btn btn-secondary"
+                                    style={{ padding: '4px 8px', minHeight: 'auto' }}
+                                >
+                                    ✕
+                                </button>
+                            </div>
+                            
+                            <div className="space-y-3 text-sm">
+                                <div>
+                                    <span className="font-medium">Nhân viên:</span> {request.employeeName}
+                                </div>
+                                <div>
+                                    <span className="font-medium">Phòng ban:</span> {request.departmentName}
+                                </div>
+                                <div>
+                                    <span className="font-medium">Thời gian nghỉ:</span><br/>
+                                    {formatDateRange(request.fromDate, request.toDate, request.leaveType, request.startDayType, request.endDayType, request.leaveDays)}
+                                </div>
+                                <div>
+                                    <span className="font-medium">Số ngày nghỉ:</span> {request.leaveDays} ngày
+                                </div>
+                                <div>
+                                    <span className="font-medium">Lý do:</span> {getReasonLabel(request.reason, request.customReason)}
+                                </div>
+                                {request.location && (
+                                    <div>
+                                        <span className="font-medium">Địa điểm:</span> {getLocationLabel(request.location)}
+                                    </div>
+                                )}
+                                <div>
+                                    <span className="font-medium">Trạng thái:</span>
+                                    <span className={`badge ml-2 ${
+                                        request.status === 'approved' ? 'success' : 
+                                        request.status === 'rejected' ? 'danger' : ''
+                                    }`} style={{
+                                        backgroundColor: request.status === 'pending' ? '#fef3c7' : undefined,
+                                        color: request.status === 'pending' ? '#92400e' : undefined
+                                    }}>
+                                        {request.status === 'approved' ? 'Đã duyệt' : 
+                                        request.status === 'rejected' ? 'Đã từ chối' : 'Chờ duyệt'}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span className="font-medium">Ngày đăng ký:</span> {formatDate(request.requestDate)}
+                                </div>
+                                {request.approvedDate && (
+                                    <div>
+                                        <span className="font-medium">Ngày xử lý:</span> {formatDate(request.approvedDate)}
+                                    </div>
+                                )}
+                            </div>
+
+                            {request.status === 'pending' && onApproval && (
+                                <div className="flex space-x-2 mt-6">
+                                    <button
+                                        onClick={() => onApproval(request.id, 'approved')}
+                                        className="btn btn-success flex-1"
+                                        disabled={loading}
+                                    >
+                                        Duyệt
+                                    </button>
+                                    <button
+                                        onClick={() => onApproval(request.id, 'rejected')}
+                                        className="btn btn-danger flex-1"
+                                        disabled={loading}
+                                    >
+                                        Từ chối
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
             };
 
             const calculateLeaveDays = (fromDate, toDate, leaveType, startDayType, endDayType) => {
@@ -950,6 +1049,7 @@
                         leaveDays: leaveDays,
                         reason: formData.reason,
                         customReason: formData.customReason,
+                        location: formData.location,
                         status: 'pending'
                     };
 
@@ -974,7 +1074,8 @@
                         startDayType: 'full-day',
                         endDayType: 'full-day',
                         reason: '',
-                        customReason: ''
+                        customReason: '',
+                        location: 'trong-tp'
                     });
 
                 } catch (error) {
@@ -1221,7 +1322,15 @@
                             <h3 className="text-lg font-semibold mb-4">Đơn nghỉ phép gần đây</h3>
                             <div className="space-y-2">
                                 {leaveRequests.slice(0, 3).map(request => (
-                                    <div key={request.id} className="border rounded-lg p-3 bg-gray-50">
+                                    <div 
+                                        key={request.id} 
+                                        className="border rounded-lg p-3 bg-gray-50 cursor-pointer hover:bg-gray-100"
+                                        onClick={() => {
+                                            setSelectedRequest(request);
+                                            setShowRequestDetail(true);
+                                        }}
+                                        style={{ cursor: 'pointer' }}
+                                    >
                                         <div className="flex flex-between">
                                             <div>
                                                 <span className="font-medium">{request.employeeName}</span>
@@ -1237,7 +1346,7 @@
                                                 color: request.status === 'pending' ? '#92400e' : undefined
                                             }}>
                                                 {request.status === 'approved' ? 'Đã duyệt' : 
-                                                 request.status === 'rejected' ? 'Đã từ chối' : 'Chờ duyệt'}
+                                                request.status === 'rejected' ? 'Đã từ chối' : 'Chờ duyệt'}
                                             </span>
                                         </div>
                                     </div>
@@ -1440,6 +1549,30 @@
                                                     ...formData,
                                                     reason: e.target.value,
                                                     customReason: e.target.value !== 'khac' ? '' : formData.customReason
+                                                })}
+                                                required
+                                                disabled={loading}
+                                            />
+                                            {option.label}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="label">
+                                    Địa điểm nghỉ phép *
+                                </label>
+                                <div className="radio-group">
+                                    {locationOptions.map(option => (
+                                        <label key={option.value} className="radio-item">
+                                            <input
+                                                type="radio"
+                                                name="location"
+                                                value={option.value}
+                                                checked={formData.location === option.value}
+                                                onChange={(e) => setFormData({
+                                                    ...formData,
+                                                    location: e.target.value
                                                 })}
                                                 required
                                                 disabled={loading}
@@ -1721,9 +1854,21 @@
                     {currentPage === 'request' && <RequestFormPage />}
                     {currentPage === 'approval' && <ApprovalPage />}
                     {showPasswordPrompt && <PasswordPrompt />}
+                    {showRequestDetail && (
+                        <RequestDetailModal 
+                            request={selectedRequest}
+                            onClose={() => {
+                                setShowRequestDetail(false);
+                                setSelectedRequest(null);
+                            }}
+                            onApproval={currentPage === 'approval' ? handleApproval : null}
+                            loading={loading}
+                        />
+                    )}
                 </div>
             );
         };
+        
 
         const root = ReactDOM.createRoot(document.getElementById('app'));
         root.render(<LeaveManagementApp />);

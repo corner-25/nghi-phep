@@ -197,6 +197,25 @@
             flex: 0 0 auto;
         }
 
+        /* Brand header with logo + title */
+        .header-brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 8px; /* replaces h1 mb-2 spacing */
+        }
+        .header-brand h1 { margin: 0; }
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            flex: 0 0 auto;
+        }
+        @media (max-width: 768px) {
+            .brand-logo { width: 28px; height: 28px; }
+        }
+
         /* Normalize icon size inside buttons for perfect vertical alignment */
         .btn .icon {
             width: 20px;
@@ -1091,9 +1110,12 @@
             const HomePage = () => (
                 <div className="container">
                     <div className="text-center mb-8">
-                        <h1 className="text-3xl font-bold text-gray-800 mb-2">
-                            Hệ thống Quản lý nghỉ phép Phòng Hành chính
-                        </h1>
+                        <div className="header-brand">
+                            <img src="logo.png" alt="Logo" className="brand-logo" />
+                            <h1 className="text-3xl font-bold text-gray-800">
+                                Hệ thống Quản lý nghỉ phép Phòng Hành chính
+                            </h1>
+                        </div>
                         <p className="text-gray-600">
                             Đăng ký và duyệt lịch nghỉ phép trực tuyến
                         </p>
@@ -1106,12 +1128,12 @@
                                 <span className={`loading-spinner mr-2 ${loading ? '' : 'hidden'}`} style={{ width: '16px', height: '16px', border: '2px solid transparent', borderTop: '2px solid white', borderRadius: '50%' }}></span>
                                 Làm mới dữ liệu
                             </button>
-                            <div className="text-sm" style={{ 
+                            <div className="text-sm" style={{
                                 color: realtimeEnabled ? '#10b981' : '#f59e0b',
                                 display: 'flex',
                                 alignItems: 'center'
                             }}>
-                                
+
                             </div>
                         </div>
                     </div>
